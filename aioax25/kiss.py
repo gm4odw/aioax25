@@ -341,20 +341,20 @@ class BaseKISSDevice(object):
     def _send_kiss_cmd(self):
         try:
             command = self._kiss_rem_commands.pop(0)
+
+            self._log.debug('Sending %r', command)
+            command = command.encode('US-ASCII')
+            self._rx_buffer = bytearray()
+            for bv in command:
+                self._send_raw_data(bytes([bv]))
+                time.sleep(0.1)
+            self._send_raw_data(b'\r')
+            self._loop.call_later(0.5, self._check_open)
         except IndexError:
             # Should be open now.
             self._open_time = time.time()
             self._state = KISSDeviceState.OPEN
             self._rx_buffer = bytearray()
-
-        self._log.debug('Sending %r', command)
-        command = command.encode('US-ASCII')
-        self._rx_buffer = bytearray()
-        for bv in command:
-            self._send_raw_data(bytes([bv]))
-            time.sleep(0.1)
-        self._send_raw_data(b'\r')
-        self._loop.call_later(0.5, self._check_open)
 
     def _check_open(self):
         """
